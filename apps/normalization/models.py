@@ -15,9 +15,9 @@ class Dataset(BaseModelMixin, models.Model):
     """
 
     class FileType(models.TextChoices):
-        CSV = "CSV", "CSV"
-        XLSX = "XLSX", "XLSX"
-        JSON = "JSON", "JSON"
+        CSV   = "csv",   "CSV"
+        EXCEL = "excel", "Excel"
+        JSON  = "json",  "JSON"
 
     owner = models.UUIDField(
         help_text="Guest ID or User ID depending on the authentication."
@@ -40,6 +40,8 @@ class Dataset(BaseModelMixin, models.Model):
     confirmed_config = models.JSONField(null=True, blank=True)
     profiling_output = models.JSONField(null=True, blank=True)
     normalization_output = models.JSONField(null=True, blank=True)
+    timings = models.JSONField(null=True, blank=True)
+    webhook_url = models.URLField(max_length=2048, null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} ({self.status})"

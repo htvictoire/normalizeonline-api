@@ -15,6 +15,19 @@ def get_client():
     )
 
 
+def generate_download_url(s3_key: str, filename: str, expires_in: int = 300) -> str:
+    """Generates a presigned GET URL for downloading an S3 object."""
+    return get_client().generate_presigned_url(
+        "get_object",
+        Params={
+            "Bucket": settings.S3_BUCKET_NAME,
+            "Key": s3_key,
+            "ResponseContentDisposition": f'attachment; filename="{filename}"',
+        },
+        ExpiresIn=expires_in,
+    )
+
+
 def generate_upload_url(owner_id: str, filename: str) -> tuple[str, str]:
     """
     Generates a presigned PUT URL and the corresponding s3_key.

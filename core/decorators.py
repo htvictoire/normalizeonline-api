@@ -1,7 +1,10 @@
 from functools import wraps
 from uuid import UUID
 from django.conf import settings
+from rest_framework import status
+from drf_commons.response import error_response
 from apps.accounts.models import GuestUser
+from apps.accounts.utils import get_current_owner
 
 
 def ensure_owner(view_func):
@@ -36,6 +39,19 @@ def ensure_owner(view_func):
             )
             return response
 
+        return view_func(self, request, *args, **kwargs)
+
+    return _wrapped
+
+
+def ensure_is_owner(view_func):
+    @wraps(view_func)
+    def _wrapped(self, request, *args, **kwargs):
+        if not get_current_owner(request):
+            return error_response(
+                message="You do not have permission to perform this action.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
         return view_func(self, request, *args, **kwargs)
 
     return _wrapped
