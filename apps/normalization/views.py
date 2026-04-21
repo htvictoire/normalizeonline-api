@@ -66,7 +66,7 @@ class DatasetViewSet(
         serializer.is_valid(raise_exception=True)
         dataset = serializer.save()
         return success_response(
-            data=serializer.validated_data,
+            data=self.get_serializer(dataset).data,
             message="Dataset created successfully.",
             status_code=status.HTTP_201_CREATED,
         )

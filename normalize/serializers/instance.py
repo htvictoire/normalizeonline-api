@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .base import INSTANCE_STATUS_CHOICES, FILE_FORMAT_CHOICES, FILE_SOURCE_CHOICES
+from core.serializers import ISODateTimeStringField
+from .base import FILE_FORMAT_CHOICES, FILE_SOURCE_CHOICES, INSTANCE_STATUS_CHOICES
 from .config import InstanceConfigSerializer
 from .suggestion import SuggestionDisplaySerializer
 from .profiling import ProfilingOutputSerializer
@@ -7,12 +8,12 @@ from .result import NormalizationOutputSerializer
 
 
 class StageTimingsSerializer(serializers.Serializer):
-    suggest_started_at         = serializers.DateTimeField(allow_null=True, required=False)
-    suggest_ended_at           = serializers.DateTimeField(allow_null=True, required=False)
-    profile_started_at         = serializers.DateTimeField(allow_null=True, required=False)
-    profile_ended_at           = serializers.DateTimeField(allow_null=True, required=False)
-    convert_started_at         = serializers.DateTimeField(allow_null=True, required=False)
-    convert_ended_at           = serializers.DateTimeField(allow_null=True, required=False)
+    suggest_started_at         = ISODateTimeStringField(allow_null=True, required=False)
+    suggest_ended_at           = ISODateTimeStringField(allow_null=True, required=False)
+    profile_started_at         = ISODateTimeStringField(allow_null=True, required=False)
+    profile_ended_at           = ISODateTimeStringField(allow_null=True, required=False)
+    convert_started_at         = ISODateTimeStringField(allow_null=True, required=False)
+    convert_ended_at           = ISODateTimeStringField(allow_null=True, required=False)
     estimated_pipeline_seconds = serializers.IntegerField(allow_null=True, required=False)
 
 

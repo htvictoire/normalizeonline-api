@@ -1,9 +1,33 @@
 from rest_framework import serializers
 from apps.normalization.models import Dataset
 from normalize.serializers import NormalizeInstanceSerializer
+from normalize.serializers.base import INSTANCE_STATUS_CHOICES, FILE_FORMAT_CHOICES, FILE_SOURCE_CHOICES
 
 
 class DatasetSerializer(NormalizeInstanceSerializer, serializers.ModelSerializer):
+    # Re-declare inherited normalize-instance fields when the Dataset DB contract is
+    # looser than the normalize service contract. NormalizeClient keeps the service
+    # response strict; this serializer should match the Dataset model contract.
+    instance_id = serializers.UUIDField(required=False, allow_null=True)
+    status = serializers.ChoiceField(
+        choices=INSTANCE_STATUS_CHOICES,
+        required=False,
+        allow_null=True,
+    )
+    tenant_id = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    source_file_name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    source_file_format = serializers.ChoiceField(
+        choices=FILE_FORMAT_CHOICES,
+        required=False,
+        allow_null=True,
+    )
+    source_type = serializers.ChoiceField(
+        choices=FILE_SOURCE_CHOICES,
+        required=False,
+    )
+    source_file = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    source_checksum = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
     class Meta:
         model = Dataset
         exclude = ["created_by", "deleted_at", "is_active"]

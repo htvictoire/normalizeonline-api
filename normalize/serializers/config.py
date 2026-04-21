@@ -42,12 +42,12 @@ class BooleanColumnConfigSerializer(serializers.Serializer):
 
 class IntegerColumnConfigSerializer(serializers.Serializer):
     type               = serializers.ChoiceField(choices=["integer"])
-    thousand_separator = serializers.CharField()
+    thousand_separator = serializers.CharField(allow_blank=True)
     grouping_style     = serializers.ChoiceField(choices=GROUPING_STYLE_CHOICES)
 
 
 class _DecimalSyntaxColumnConfigSerializer(serializers.Serializer):
-    thousand_separator          = serializers.CharField()
+    thousand_separator          = serializers.CharField(allow_blank=True)
     grouping_style              = serializers.ChoiceField(choices=GROUPING_STYLE_CHOICES)
     decimal_separator           = serializers.CharField()
     allow_leading_decimal_point = serializers.BooleanField()
