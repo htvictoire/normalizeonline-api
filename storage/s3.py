@@ -1,6 +1,8 @@
 import uuid
+
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 from django.conf import settings
 
 
@@ -15,17 +17,35 @@ def get_client():
     )
 
 
-def generate_download_url(s3_key: str, filename: str, expires_in: int = 300) -> str:
+def generate_download_url(s3_key: str, filename: str, expires_in: int = 300, content_type: str | None = None) -> str:
     """Generates a presigned GET URL for downloading an S3 object."""
-    return get_client().generate_presigned_url(
-        "get_object",
-        Params={
-            "Bucket": settings.S3_BUCKET_NAME,
-            "Key": s3_key,
-            "ResponseContentDisposition": f'attachment; filename="{filename}"',
-        },
-        ExpiresIn=expires_in,
+    params: dict = {
+        "Bucket": settings.S3_BUCKET_NAME,
+        "Key": s3_key,
+        "ResponseContentDisposition": f'attachment; filename="{filename}"',
+    }
+    if content_type:
+        params["ResponseContentType"] = content_type
+    return get_client().generate_presigned_url("get_object", Params=params, ExpiresIn=expires_in)
+
+
+def object_exists(s3_key: str) -> bool:
+    try:
+        get_client().head_object(Bucket=settings.S3_BUCKET_NAME, Key=s3_key)
+        return True
+    except ClientError as exc:
+        error_code = exc.response.get("Error", {}).get("Code")
+        if error_code in {"404", "NoSuchKey", "NotFound"}:
+            return False
+        raise
+
+
+def delete_object(s3_key: str) -> None:
+    get_client().delete_object(
+        Bucket=settings.S3_BUCKET_NAME,
+        Key=s3_key,
     )
+
 
 
 def generate_upload_url(owner_id: str, filename: str) -> tuple[str, str]:

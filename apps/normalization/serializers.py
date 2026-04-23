@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 from apps.normalization.models import Dataset
 from normalize.serializers import NormalizeInstanceSerializer
@@ -33,3 +34,12 @@ class DatasetSerializer(NormalizeInstanceSerializer, serializers.ModelSerializer
         exclude = ["created_by", "deleted_at", "is_active"]
         read_only_fields = ["id", "owner"]
         extra_kwargs = {"s3_key": {"write_only": True}}
+
+    def validate_size_mb(self, value):
+        file_type = self.initial_data.get("file_type")
+        limit = settings.UPLOAD_MAX_FILE_SIZE_MB.get(file_type)
+        if limit is not None and value > limit:
+            raise serializers.ValidationError(
+                f"{file_type.upper()} files must not exceed {limit} MB (got {value} MB)."
+            )
+        return value

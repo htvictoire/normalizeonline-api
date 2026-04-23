@@ -17,4 +17,4 @@ class SuggestedColumnDisplaySerializer(serializers.Serializer):
 class SuggestionDisplaySerializer(serializers.Serializer):
     row_count   = serializers.IntegerField()
     columns     = serializers.DictField(child=SuggestedColumnDisplaySerializer())
-    sample_rows = serializers.ListField(child=serializers.ListField(child=serializers.CharField()))
+    sample_rows = serializers.ListField(child=serializers.ListField(child=serializers.CharField(allow_blank=True)))

@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ dataset_name }} Report</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 18mm;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: {{ canvas }};
+      color: {{ ink }};
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .page {
+      width: 100%;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid {{ border }};
+    }
+
+    .brand {
+      max-width: 70%;
+    }
+
+    .brand img {
+      width: 144px;
+      height: auto;
+      display: block;
+    }
+
+    .eyebrow {
+      margin-top: 10px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: {{ brand }};
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 8px 0 0;
+      font-size: 25px;
+      line-height: 1.2;
+      font-weight: 700;
+      color: {{ ink }};
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: {{ ink_muted }};
+      font-size: 13px;
+    }
+
+    .header-side {
+      min-width: 220px;
+      text-align: right;
+    }
+
+    .status-chip {
+      display: inline-block;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .status-success {
+      background: {{ success_bg }};
+      color: {{ success_fg }};
+    }
+
+    .status-warning {
+      background: {{ warning_bg }};
+      color: {{ warning_fg }};
+    }
+
+    .status-danger {
+      background: {{ danger_bg }};
+      color: {{ danger_fg }};
+    }
+
+    .status-info {
+      background: {{ info_bg }};
+      color: {{ info_fg }};
+    }
+
+    .header-meta {
+      margin-top: 12px;
+      color: {{ ink_muted }};
+      font-size: 11px;
+    }
+
+    .header-meta div + div {
+      margin-top: 3px;
+    }
+
+    .card {
+      border: 1px solid {{ border }};
+      border-radius: 12px;
+      background: {{ canvas }};
+      padding: 16px 18px;
+      margin-top: 18px;
+      box-shadow: 0 8px 24px rgba(15, 30, 53, 0.04);
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 16px;
+      font-weight: 700;
+      color: {{ ink }};
+    }
+
+    .summary-table,
+    .issues-table,
+    .pipeline-table,
+    .columns-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid {{ border }};
+      vertical-align: top;
+    }
+
+    th {
+      color: {{ ink_muted }};
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-align: left;
+      background: {{ surface }};
+    }
+
+    tr:nth-child(even) td {
+      background: {{ stripe }};
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .metric-grid {
+      font-size: 0;
+      margin: -6px;
+    }
+
+    .metric-card {
+      display: inline-block;
+      width: calc(25% - 12px);
+      margin: 6px;
+      padding: 12px 14px;
+      border: 1px solid {{ border }};
+      border-radius: 10px;
+      background: {{ surface }};
+      vertical-align: top;
+      page-break-inside: avoid;
+    }
+
+    .metric-label {
+      color: {{ ink_muted }};
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: 700;
+      color: {{ ink }};
+    }
+
+    .metric-detail {
+      margin-top: 4px;
+      color: {{ ink_muted }};
+      font-size: 11px;
+    }
+
+    .metric-positive .metric-value {
+      color: {{ success_fg }};
+    }
+
+    .metric-warning .metric-value {
+      color: {{ warning_fg }};
+    }
+
+    .metric-danger .metric-value {
+      color: {{ danger_fg }};
+    }
+
+    .summary-pills {
+      margin: 0 0 12px;
+    }
+
+    .summary-pill,
+    .severity-badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    .pill-positive {
+      background: {{ success_bg }};
+      color: {{ success_fg }};
+    }
+
+    .pill-warning,
+    .severity-warning {
+      background: {{ warning_bg }};
+      color: {{ warning_fg }};
+    }
+
+    .pill-danger,
+    .severity-error {
+      background: {{ danger_bg }};
+      color: {{ danger_fg }};
+    }
+
+    .pill-info,
+    .severity-info {
+      background: {{ info_bg }};
+      color: {{ info_fg }};
+    }
+
+    .config-block + .config-block {
+      margin-top: 16px;
+    }
+
+    .config-title {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: {{ ink }};
+    }
+
+    .column-name {
+      font-weight: 700;
+      color: {{ ink }};
+    }
+
+    .subtext {
+      margin-top: 3px;
+      color: {{ ink_muted }};
+      font-size: 11px;
+    }
+
+    .empty-state {
+      color: {{ ink_muted }};
+      margin: 0;
+    }
+
+    .footer {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1px solid {{ border }};
+      color: {{ ink_muted }};
+      font-size: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div class="brand">
+        {% if logo_data_uri %}
+          <img src="{{ logo_data_uri }}" alt="Normalize Online">
+        {% endif %}
+        <div class="eyebrow">Normalization Report</div>
+        <h1>{{ dataset_name }}</h1>
+        <p class="subtitle">{{ report_subtitle }}</p>
+      </div>
+      <div class="header-side">
+        <div class="status-chip status-{{ status_key }}">{{ status_label }}</div>
+        <div class="header-meta">
+          <div><strong>Generated:</strong> {{ generated_at }}</div>
+          <div><strong>Dataset ID:</strong> {{ dataset_id }}</div>
+          <div><strong>Instance:</strong> {{ instance_id }}</div>
+        </div>
+      </div>
+    </div>
+
+    <section class="card">
+      <h2 class="section-title">Dataset Overview</h2>
+      <table class="summary-table">
+        <tbody>
+          {% for row in metadata_rows %}
+            <tr>
+              <th style="width: 24%;">{{ row.label }}</th>
+              <td>{{ row.value }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    {% if pipeline_rows %}
+      <section class="card">
+        <h2 class="section-title">Pipeline Timing</h2>
+        <table class="pipeline-table">
+          <thead>
+            <tr>
+              <th style="width: 22%;">Stage</th>
+              <th style="width: 26%;">Started</th>
+              <th style="width: 26%;">Ended</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in pipeline_rows %}
+              <tr>
+                <td>{{ row.stage }}</td>
+                <td>{{ row.started_at }}</td>
+                <td>{{ row.ended_at }}</td>
+                <td>{{ row.duration }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="subtext">Estimated pipeline time: {{ estimated_pipeline }}</div>
+      </section>
+    {% endif %}
+
+    <section class="card">
+      <h2 class="section-title">Key Metrics</h2>
+      <div class="metric-grid">
+        {% for card in metric_cards %}
+          <div class="metric-card metric-{{ card.tone }}">
+            <div class="metric-label">{{ card.label }}</div>
+            <div class="metric-value">{{ card.value }}</div>
+            {% if card.detail %}
+              <div class="metric-detail">{{ card.detail }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Issues</h2>
+      <div class="summary-pills">
+        {% for item in issue_summary %}
+          <span class="summary-pill pill-{{ item.tone }}">{{ item.label }}: {{ item.count }}</span>
+        {% endfor %}
+      </div>
+      {% if issues %}
+        <table class="issues-table">
+          <thead>
+            <tr>
+              <th style="width: 12%;">Severity</th>
+              <th style="width: 12%;">Code</th>
+              <th style="width: 18%;">Location</th>
+              <th style="width: 32%;">Message</th>
+              <th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for issue in issues %}
+              <tr>
+                <td><span class="severity-badge severity-{{ issue.severity_key }}">{{ issue.severity }}</span></td>
+                <td>{{ issue.code }}</td>
+                <td>{{ issue.location }}</td>
+                <td>{{ issue.message }}</td>
+                <td>{{ issue.evidence }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="empty-state">No profiling issues were reported.</p>
+      {% endif %}
+    </section>
+
+    {% if config_sections %}
+      <section class="card">
+        <h2 class="section-title">Applied Configuration</h2>
+        {% for section in config_sections %}
+          <div class="config-block">
+            <h3 class="config-title">{{ section.title }}</h3>
+            <table class="summary-table">
+              <tbody>
+                {% for row in section.rows %}
+                  <tr>
+                    <th style="width: 30%;">{{ row.label }}</th>
+                    <td>{{ row.value }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    <section class="card">
+      <h2 class="section-title">Column Summary</h2>
+      {% if columns %}
+        <table class="columns-table">
+          <thead>
+            <tr>
+              <th style="width: 5%;">#</th>
+              <th style="width: 19%;">Column</th>
+              <th style="width: 10%;">Type</th>
+              <th style="width: 9%;">Fill</th>
+              <th style="width: 9%;">Non-Null</th>
+              <th style="width: 8%;">Nulls</th>
+              <th style="width: 9%;">Nullish</th>
+              <th style="width: 8%;">Issues</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for column in columns %}
+              <tr>
+                <td>{{ column.index }}</td>
+                <td>
+                  <div class="column-name">{{ column.name }}</div>
+                  <div class="subtext">{{ column.field }}</div>
+                </td>
+                <td>{{ column.column_type }}</td>
+                <td>{{ column.fill_rate }}</td>
+                <td>{{ column.non_null }}</td>
+                <td>{{ column.nulls }}</td>
+                <td>{{ column.nullish }}</td>
+                <td>{{ column.issue_count }}</td>
+                <td>
+                  <div>{{ column.profile }}</div>
+                  {% if column.config != "—" %}
+                    <div class="subtext">Config: {{ column.config }}</div>
+                  {% endif %}
+                  {% if column.issue_codes != "—" %}
+                    <div class="subtext">Issue codes: {{ column.issue_codes }}</div>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="empty-state">No column profiling data was available for this dataset.</p>
+      {% endif %}
+    </section>
+
+    <div class="footer">
+      Normalize Online report generated in {{ footer_year }}. Source status last updated at {{ source_file_updated_at }}.
+    </div>
+  </div>
+</body>
+</html>

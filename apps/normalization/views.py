@@ -1,4 +1,5 @@
-import os
+from logging import getLogger
+
 from django.conf import settings
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
@@ -8,9 +9,13 @@ from apps.accounts.utils import get_current_owner
 from core.decorators import ensure_owner, ensure_is_owner
 from apps.normalization.models import Dataset
 from apps.normalization.serializers import DatasetSerializer
+from apps.normalization.tasks import queue_export, queue_report, get_report_key
+from export import build_export_key, build_json_export_key, build_xlsx_export_key
+from export import PDFExportError
 from normalize import NormalizeClient, NormalizeClientError, NormalizeConfirmRequestSerializer
 from storage.s3 import generate_upload_url, generate_download_url
 
+logger = getLogger(__name__)
 
 class DatasetViewSet(
     CreateModelMixin,
@@ -71,28 +76,69 @@ class DatasetViewSet(
             status_code=status.HTTP_201_CREATED,
         )
 
-    @action(detail=True, methods=["get"], url_path="download")
+    @action(detail=True, methods=["get"], url_path="export")
     @ensure_is_owner
-    def download(self, request, pk=None):
+    def export(self, request, pk=None):
         dataset = self.get_object()
 
-        if not dataset.normalization_output:
+        if not dataset.normalized_parquet:
             return error_response(
-                message="Dataset normalization output is not available.",
+                message="Dataset is not normalized yet.",
                 status_code=status.HTTP_409_CONFLICT,
             )
 
-        s3_key = dataset.normalization_output.get("artifacts", {}).get("normalized_parquet")
-        if not s3_key:
+        parquet_key = dataset.normalized_parquet
+
+        _EXPORT_FORMATS = {
+            "csv":  ("csv_exported_at",  lambda pk, ds: build_export_key(pk)),
+            "json": ("json_exported_at", lambda pk, ds: build_json_export_key(pk)),
+            "xlsx": ("xlsx_exported_at", lambda pk, ds: build_xlsx_export_key(pk)),
+        }
+
+        fmt = request.query_params.get("fmt", "csv")
+        if fmt == "parquet":
+            filename = f"{dataset.name}_normalized.parquet"
+            url = generate_download_url(s3_key=parquet_key, filename=filename)
+            return success_response(data={"id": dataset.id, "url": url, "filename": filename, "format": fmt})
+
+        if fmt not in _EXPORT_FORMATS:
+            return error_response(message="Unsupported format. Supported: csv, xlsx, json, parquet.")
+
+        ready_field, key_fn = _EXPORT_FORMATS[fmt]
+        if not getattr(dataset, ready_field):
+            queue_export(dataset.id, fmt)
             return error_response(
-                message="Output file not found.",
-                status_code=status.HTTP_404_NOT_FOUND,
+                message="Export is being prepared, please try again shortly.",
+                status_code=status.HTTP_409_CONFLICT,
             )
 
-        base_name = os.path.splitext(dataset.original_name)[0]
-        filename = f"{base_name}_normalized.parquet"
-        url = generate_download_url(s3_key=s3_key, filename=filename)
-        return success_response(data={"url": url, "filename": filename})
+        filename = f"{dataset.name}_normalized.{fmt}"
+        url = generate_download_url(s3_key=key_fn(parquet_key, dataset), filename=filename)
+        return success_response(data={"id": dataset.id, "url": url, "filename": filename, "format": fmt})
+
+    @action(detail=True, methods=["get"], url_path="report")
+    @ensure_is_owner
+    def report(self, request, pk=None):
+        dataset = self.get_object()
+
+        if not dataset.normalized_parquet:
+            return error_response(
+                message="Dataset is not normalized yet.",
+                status_code=status.HTTP_409_CONFLICT,
+            )
+
+        try:
+            report_key = get_report_key(dataset)
+        except PDFExportError:
+            logger.exception("report: generation failed for dataset %s", dataset.id)
+            return error_response(
+                message="Failed to generate report.",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        filename = f"{dataset.name}_report.pdf"
+        url = generate_download_url(s3_key=report_key, filename=filename)
+        return success_response(data={"id": dataset.id, "url": url, "filename": filename})
 
     @action(detail=True, methods=["post"], url_path="confirm")
     @ensure_is_owner
@@ -153,6 +199,10 @@ def instance_status_webhook(request):
 
     serializer = DatasetSerializer(dataset, data=instance_data, partial=True)
     serializer.is_valid(raise_exception=True)
-    serializer.save()
+    dataset = serializer.save()
+
+    if dataset.status in {"READY", "READY_WITH_WARNINGS"}:
+        queue_export(dataset.id, "csv")
+        queue_report(dataset.id)
 
     return success_response(message="OK")

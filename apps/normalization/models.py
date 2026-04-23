@@ -16,7 +16,7 @@ class Dataset(BaseModelMixin, models.Model):
 
     class FileType(models.TextChoices):
         CSV   = "csv",   "CSV"
-        EXCEL = "excel", "Excel"
+        XLSX  = "xlsx",  "XLSX"
         JSON  = "json",  "JSON"
 
     owner = models.UUIDField(
@@ -42,6 +42,26 @@ class Dataset(BaseModelMixin, models.Model):
     normalization_output = models.JSONField(null=True, blank=True)
     timings = models.JSONField(null=True, blank=True)
     webhook_url = models.URLField(max_length=2048, null=True, blank=True)
+    csv_exported_at   = models.DateTimeField(null=True, blank=True)
+    xlsx_exported_at  = models.DateTimeField(null=True, blank=True)
+    json_exported_at  = models.DateTimeField(null=True, blank=True)
+    pdf_exported_at   = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def normalized_parquet(self) -> str | None:
+        return (self.normalization_output or {}).get("artifacts", {}).get("normalized_parquet")
+
+    @property
+    def manifest_json(self) -> str | None:
+        return (self.normalization_output or {}).get("artifacts", {}).get("manifest_json")
+
+    @property
+    def trace_parquet(self) -> str | None:
+        return (self.normalization_output or {}).get("artifacts", {}).get("trace_parquet")
+
+    @property
+    def normalized_row_count(self) -> int | None:
+        return (self.normalization_output or {}).get("quality_output", {}).get("row_count")
 
     def __str__(self):
         return f"{self.name} ({self.status})"
