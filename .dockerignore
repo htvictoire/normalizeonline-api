@@ -9,3 +9,7 @@ __pycache__
 .pytest_cache
 Makefile
 .python-version
+
+# Logs are written to a host bind-mount at runtime, never baked into the image
+logs
+*.log

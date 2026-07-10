@@ -7,11 +7,20 @@ INSTANCE_STATUS_CHOICES = [
 ]
 FILE_FORMAT_CHOICES    = ["csv", "excel", "json"]
 FILE_SOURCE_CHOICES    = ["local", "s3"]
-COLUMN_TYPE_CHOICES    = ["string", "boolean", "integer", "decimal", "currency", "percentage", "signed", "accounting", "date"]
-GROUPING_STYLE_CHOICES = ["western", "indian"]
-HEADER_MODE_CHOICES    = ["present", "absent"]
-ISSUE_SEVERITY_CHOICES = ["ERROR", "WARNING", "INFO"]
-TRACE_MODE_CHOICES     = ["full", "sparse"]
+COLUMN_TYPE_CHOICES    = [
+    "string", "identifier", "boolean", "integer", "decimal", "currency",
+    "percentage", "signed", "accounting", "date", "datetime", "time",
+    "country_code", "currency_code", "language_code",
+    "categorical", "email", "url", "ip_address", "phone",
+]
+GROUPING_STYLE_CHOICES        = ["western", "indian"]
+HEADER_MODE_CHOICES           = ["present", "absent"]
+ISSUE_SEVERITY_CHOICES        = ["ERROR", "WARNING", "INFO"]
+TRACE_MODE_CHOICES            = ["full", "sparse"]
+SUGGESTION_METHOD_CHOICES     = ["rule_based", "ai"]
+IDENTIFIER_KIND_CHOICES       = ["primary", "foreign", "business_key", "opaque"]
+CODE_FORMAT_CHOICES           = ["alpha_2", "alpha_3"]
+IP_VERSION_CHOICES            = ["any", "v4", "v6"]
 
 
 class DiscriminatedField(serializers.Field):

@@ -105,18 +105,89 @@ class DateColumnProfileSerializer(serializers.Serializer):
     format_match_ratio = serializers.FloatField()
 
 
+class DateTimeColumnProfileSerializer(serializers.Serializer):
+    profile_type       = serializers.ChoiceField(choices=["datetime"])
+    format_match_count = serializers.IntegerField()
+    format_match_ratio = serializers.FloatField()
+
+
+class TimeColumnProfileSerializer(serializers.Serializer):
+    profile_type       = serializers.ChoiceField(choices=["time"])
+    format_match_count = serializers.IntegerField()
+    format_match_ratio = serializers.FloatField()
+
+
+class IdentifierColumnProfileSerializer(serializers.Serializer):
+    profile_type      = serializers.ChoiceField(choices=["identifier"])
+    distinct_count    = serializers.IntegerField()
+    distinct_ratio    = serializers.FloatField()
+    duplicate_count   = serializers.IntegerField()
+    uniqueness_ratio  = serializers.FloatField()
+    min_length        = serializers.IntegerField()
+    max_length        = serializers.IntegerField()
+
+
+class _ValidityProfileSerializer(serializers.Serializer):
+    valid_count   = serializers.IntegerField()
+    invalid_count = serializers.IntegerField()
+    valid_ratio   = serializers.FloatField()
+
+
+class CountryCodeColumnProfileSerializer(_ValidityProfileSerializer):
+    profile_type = serializers.ChoiceField(choices=["country_code"])
+
+
+class CurrencyCodeColumnProfileSerializer(_ValidityProfileSerializer):
+    profile_type = serializers.ChoiceField(choices=["currency_code"])
+
+
+class LanguageCodeColumnProfileSerializer(_ValidityProfileSerializer):
+    profile_type = serializers.ChoiceField(choices=["language_code"])
+
+
+class CategoricalColumnProfileSerializer(_ValidityProfileSerializer):
+    profile_type = serializers.ChoiceField(choices=["categorical"])
+
+
+class EmailColumnProfileSerializer(_ValidityProfileSerializer):
+    profile_type = serializers.ChoiceField(choices=["email"])
+
+
+class UrlColumnProfileSerializer(_ValidityProfileSerializer):
+    profile_type = serializers.ChoiceField(choices=["url"])
+
+
+class IpAddressColumnProfileSerializer(_ValidityProfileSerializer):
+    profile_type = serializers.ChoiceField(choices=["ip_address"])
+
+
+class PhoneColumnProfileSerializer(_ValidityProfileSerializer):
+    profile_type = serializers.ChoiceField(choices=["phone"])
+
+
 class ColumnProfileField(DiscriminatedField):
     discriminant_key = "profile_type"
     serializer_map   = {
-        "string":     StringColumnProfileSerializer,
-        "boolean":    BooleanColumnProfileSerializer,
-        "integer":    IntegerColumnProfileSerializer,
-        "decimal":    DecimalColumnProfileSerializer,
-        "percentage": PercentageColumnProfileSerializer,
-        "signed":     SignedColumnProfileSerializer,
-        "currency":   CurrencyColumnProfileSerializer,
-        "accounting": AccountingColumnProfileSerializer,
-        "date":       DateColumnProfileSerializer,
+        "string":        StringColumnProfileSerializer,
+        "identifier":    IdentifierColumnProfileSerializer,
+        "boolean":       BooleanColumnProfileSerializer,
+        "integer":       IntegerColumnProfileSerializer,
+        "decimal":       DecimalColumnProfileSerializer,
+        "percentage":    PercentageColumnProfileSerializer,
+        "signed":        SignedColumnProfileSerializer,
+        "currency":      CurrencyColumnProfileSerializer,
+        "accounting":    AccountingColumnProfileSerializer,
+        "date":          DateColumnProfileSerializer,
+        "datetime":      DateTimeColumnProfileSerializer,
+        "time":          TimeColumnProfileSerializer,
+        "country_code":  CountryCodeColumnProfileSerializer,
+        "currency_code": CurrencyCodeColumnProfileSerializer,
+        "language_code": LanguageCodeColumnProfileSerializer,
+        "categorical":   CategoricalColumnProfileSerializer,
+        "email":         EmailColumnProfileSerializer,
+        "url":           UrlColumnProfileSerializer,
+        "ip_address":    IpAddressColumnProfileSerializer,
+        "phone":         PhoneColumnProfileSerializer,
     }
 
 

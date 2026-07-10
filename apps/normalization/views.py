@@ -53,11 +53,13 @@ class DatasetViewSet(
         dataset = serializer.save(owner=get_current_owner(request))
 
         suggest_payload = {
-            "source_file":        dataset.s3_key,
-            "source_type":        "s3",
-            "source_file_name":   dataset.original_name,
-            "source_file_format": dataset.file_type,
-            "source_checksum":    dataset.source_checksum,
+            "source_file":             dataset.s3_key,
+            "source_type":             "s3",
+            "source_file_name":        dataset.original_name,
+            "source_file_format":      dataset.file_type,
+            "source_checksum":         dataset.source_checksum,
+            "suggestion_method":       settings.NORMALIZE_SUGGESTION_METHOD,
+            "extended_type_detection": settings.NORMALIZE_EXTENDED_TYPE_DETECTION,
         }
 
         normalize_client = NormalizeClient()
@@ -153,9 +155,9 @@ class DatasetViewSet(
         webhook_url = f"{settings.WEBHOOK_BASE_URL}/api/normalization/webhook/instance-status/"
 
         confirm_serializer = NormalizeConfirmRequestSerializer(data={
-            "config":                request.data.get("confirmed_config"),
-            "proceed_with_pipeline": True,
-            "webhook_url":           webhook_url,
+            "config":         request.data.get("confirmed_config"),
+            "auto_normalize": True,
+            "webhook_url":    webhook_url,
         })
         if not confirm_serializer.is_valid():
             return error_response(

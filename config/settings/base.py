@@ -177,6 +177,8 @@ GUEST_COOKIE_MAX_AGE = env.int("GUEST_COOKIE_MAX_AGE")
 
 NORMALIZE_SERVICE_URL = env("NORMALIZE_SERVICE_URL")
 WEBHOOK_BASE_URL = env("WEBHOOK_BASE_URL")
+NORMALIZE_SUGGESTION_METHOD = env("NORMALIZE_SUGGESTION_METHOD")
+NORMALIZE_EXTENDED_TYPE_DETECTION = env.bool("NORMALIZE_EXTENDED_TYPE_DETECTION")
 
 S3_ENDPOINT_URL = env("S3_ENDPOINT_URL")
 S3_ACCESS_KEY_ID = env("S3_ACCESS_KEY_ID")
@@ -217,3 +219,115 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     'PATH_PREFIX': 'api',
 }
+
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+# One rotating file per concern, all living under <project>/logs, plus a
+# console stream (so `docker compose logs` / `manage.py runserver` still work).
+#
+#   logs/app.log       root / third-party libraries (boto3, urllib3, ...)
+#   logs/business.log  our domain code (apps.*, normalize, export, core)
+#   logs/django.log    the Django framework
+#   logs/request.log   HTTP 4xx/5xx handled by django.request
+#   logs/security.log  django.security (host header, CSRF, ...)
+#   logs/sql.log       raw SQL (only when LOG_SQL=true)
+#   logs/celery.log    Celery worker & tasks
+#   logs/error.log     every ERROR/CRITICAL from anywhere, aggregated
+#
+# Tunables (env):  LOG_LEVEL (default INFO), LOG_SQL (default false),
+#                  LOG_TO_CONSOLE (default true), LOG_MAX_BYTES, LOG_BACKUP_COUNT.
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+LOG_LEVEL = env("LOG_LEVEL", default="INFO").upper()
+LOG_SQL = env.bool("LOG_SQL", default=False)
+LOG_TO_CONSOLE = env.bool("LOG_TO_CONSOLE", default=True)
+LOG_MAX_BYTES = env.int("LOG_MAX_BYTES", default=10 * 1024 * 1024)  # 10 MB
+LOG_BACKUP_COUNT = env.int("LOG_BACKUP_COUNT", default=10)
+
+
+def _file_handler(filename, *, level="NOTSET", formatter="verbose"):
+    """A size-rotated file handler under LOG_DIR (opened lazily on first write)."""
+    return {
+        "level": level,
+        "class": "logging.handlers.RotatingFileHandler",
+        "filename": str(LOG_DIR / filename),
+        "maxBytes": LOG_MAX_BYTES,
+        "backupCount": LOG_BACKUP_COUNT,
+        "encoding": "utf-8",
+        "delay": True,
+        "formatter": formatter,
+    }
+
+
+# Handlers every domain logger shares: its own file + the console + the
+# aggregated error file. Keeps each logger definition to one line below.
+def _channel(own_file):
+    handlers = [own_file, "error_file"]
+    if LOG_TO_CONSOLE:
+        handlers.insert(0, "console")
+    return handlers
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        # Aligned, pipe-separated columns — easy to scan and easy to grep.
+        "verbose": {
+            "()": "logging.Formatter",
+            "format": "{asctime} │ {levelname:<8} │ {name:<26} │ {module}:{lineno} │ pid:{process} │ {message}",
+            "datefmt": "%Y-%m-%d %H:%M:%S %z",
+            "style": "{",
+        },
+        "concise": {
+            "()": "logging.Formatter",
+            "format": "{asctime} │ {levelname:<8} │ {name} │ {message}",
+            "datefmt": "%H:%M:%S",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": LOG_LEVEL,
+            "class": "logging.StreamHandler",
+            "formatter": "concise",
+        },
+        "app_file": _file_handler("app.log", level=LOG_LEVEL),
+        "business_file": _file_handler("business.log", level="DEBUG"),
+        "django_file": _file_handler("django.log", level="INFO"),
+        "request_file": _file_handler("request.log", level="WARNING"),
+        "security_file": _file_handler("security.log", level="INFO"),
+        "sql_file": _file_handler("sql.log", level="DEBUG"),
+        "celery_file": _file_handler("celery.log", level="INFO"),
+        # Aggregated errors from every logger; always full detail.
+        "error_file": _file_handler("error.log", level="ERROR"),
+    },
+    "root": {
+        "level": LOG_LEVEL,
+        "handlers": (["console"] if LOG_TO_CONSOLE else []) + ["app_file", "error_file"],
+    },
+    "loggers": {
+        # --- Django framework ---
+        "django": {"level": "INFO", "handlers": _channel("django_file"), "propagate": False},
+        "django.request": {"level": "WARNING", "handlers": _channel("request_file"), "propagate": False},
+        "django.security": {"level": "INFO", "handlers": ["security_file", "error_file"], "propagate": False},
+        "django.db.backends": {
+            "level": "DEBUG" if LOG_SQL else "WARNING",
+            "handlers": ["sql_file"],
+            "propagate": False,
+        },
+        # --- Celery ---
+        "celery": {"level": "INFO", "handlers": _channel("celery_file"), "propagate": False},
+        # --- Our domain code ---
+        "apps": {"level": LOG_LEVEL, "handlers": _channel("business_file"), "propagate": False},
+        "normalize": {"level": LOG_LEVEL, "handlers": _channel("business_file"), "propagate": False},
+        "export": {"level": LOG_LEVEL, "handlers": _channel("business_file"), "propagate": False},
+        "core": {"level": LOG_LEVEL, "handlers": _channel("business_file"), "propagate": False},
+    },
+}
+
+# Let our LOGGING config own the loggers instead of Celery hijacking root.
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False

@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .base import DiscriminatedField, GROUPING_STYLE_CHOICES, HEADER_MODE_CHOICES, TRACE_MODE_CHOICES
+from .base import (
+    DiscriminatedField, GROUPING_STYLE_CHOICES, HEADER_MODE_CHOICES, TRACE_MODE_CHOICES,
+    IDENTIFIER_KIND_CHOICES, CODE_FORMAT_CHOICES, IP_VERSION_CHOICES,
+)
 
 
 class CsvSourceFormatSerializer(serializers.Serializer):
@@ -32,6 +35,65 @@ class SourceFormatField(DiscriminatedField):
 
 class StringColumnConfigSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=["string"])
+
+
+class LocalizedReasonsSerializer(serializers.Serializer):
+    en = serializers.ListField(child=serializers.CharField(), min_length=3, max_length=3)
+    fr = serializers.ListField(child=serializers.CharField(), min_length=3, max_length=3)
+    es = serializers.ListField(child=serializers.CharField(), min_length=3, max_length=3)
+    ar = serializers.ListField(child=serializers.CharField(), min_length=3, max_length=3)
+
+
+class IdentifierColumnConfigSerializer(serializers.Serializer):
+    type            = serializers.ChoiceField(choices=["identifier"])
+    identifier_kind = serializers.ChoiceField(choices=IDENTIFIER_KIND_CHOICES, default="opaque")
+    reasons         = LocalizedReasonsSerializer(allow_null=True, required=False)
+
+
+class DateTimeColumnConfigSerializer(serializers.Serializer):
+    type            = serializers.ChoiceField(choices=["datetime"])
+    datetime_format = serializers.CharField()
+
+
+class TimeColumnConfigSerializer(serializers.Serializer):
+    type         = serializers.ChoiceField(choices=["time"])
+    time_format  = serializers.CharField()
+
+
+class CountryCodeColumnConfigSerializer(serializers.Serializer):
+    type        = serializers.ChoiceField(choices=["country_code"])
+    code_format = serializers.ChoiceField(choices=CODE_FORMAT_CHOICES)
+
+
+class CurrencyCodeColumnConfigSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=["currency_code"])
+
+
+class LanguageCodeColumnConfigSerializer(serializers.Serializer):
+    type        = serializers.ChoiceField(choices=["language_code"])
+    code_format = serializers.ChoiceField(choices=CODE_FORMAT_CHOICES)
+
+
+class CategoricalColumnConfigSerializer(serializers.Serializer):
+    type             = serializers.ChoiceField(choices=["categorical"])
+    canonical_values = serializers.ListField(child=serializers.CharField())
+
+
+class EmailColumnConfigSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=["email"])
+
+
+class UrlColumnConfigSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=["url"])
+
+
+class IpAddressColumnConfigSerializer(serializers.Serializer):
+    type    = serializers.ChoiceField(choices=["ip_address"])
+    version = serializers.ChoiceField(choices=IP_VERSION_CHOICES, default="any")
+
+
+class PhoneColumnConfigSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=["phone"])
 
 
 class BooleanColumnConfigSerializer(serializers.Serializer):
@@ -87,15 +149,26 @@ class DateColumnConfigSerializer(serializers.Serializer):
 class ColumnConfigField(DiscriminatedField):
     discriminant_key = "type"
     serializer_map   = {
-        "string":     StringColumnConfigSerializer,
-        "boolean":    BooleanColumnConfigSerializer,
-        "integer":    IntegerColumnConfigSerializer,
-        "decimal":    DecimalColumnConfigSerializer,
-        "currency":   CurrencyColumnConfigSerializer,
-        "percentage": PercentageColumnConfigSerializer,
-        "signed":     SignedColumnConfigSerializer,
-        "accounting": AccountingColumnConfigSerializer,
-        "date":       DateColumnConfigSerializer,
+        "string":        StringColumnConfigSerializer,
+        "identifier":    IdentifierColumnConfigSerializer,
+        "boolean":       BooleanColumnConfigSerializer,
+        "integer":       IntegerColumnConfigSerializer,
+        "decimal":       DecimalColumnConfigSerializer,
+        "currency":      CurrencyColumnConfigSerializer,
+        "percentage":    PercentageColumnConfigSerializer,
+        "signed":        SignedColumnConfigSerializer,
+        "accounting":    AccountingColumnConfigSerializer,
+        "date":          DateColumnConfigSerializer,
+        "datetime":      DateTimeColumnConfigSerializer,
+        "time":          TimeColumnConfigSerializer,
+        "country_code":  CountryCodeColumnConfigSerializer,
+        "currency_code": CurrencyCodeColumnConfigSerializer,
+        "language_code": LanguageCodeColumnConfigSerializer,
+        "categorical":   CategoricalColumnConfigSerializer,
+        "email":         EmailColumnConfigSerializer,
+        "url":           UrlColumnConfigSerializer,
+        "ip_address":    IpAddressColumnConfigSerializer,
+        "phone":         PhoneColumnConfigSerializer,
     }
 
 

@@ -1,10 +1,18 @@
 from rest_framework import serializers
 from core.serializers import ISODateTimeStringField
-from .base import FILE_FORMAT_CHOICES, FILE_SOURCE_CHOICES, INSTANCE_STATUS_CHOICES
+from .base import (
+    FILE_FORMAT_CHOICES, FILE_SOURCE_CHOICES, INSTANCE_STATUS_CHOICES, SUGGESTION_METHOD_CHOICES,
+)
 from .config import InstanceConfigSerializer
 from .suggestion import SuggestionDisplaySerializer
 from .profiling import ProfilingOutputSerializer
 from .result import NormalizationOutputSerializer
+
+
+class SuggestionConfidenceSerializer(serializers.Serializer):
+    delimiter     = serializers.FloatField(allow_null=True, required=False)
+    header        = serializers.FloatField(allow_null=True, required=False)
+    column_config = serializers.DictField(child=serializers.FloatField())
 
 
 class StageTimingsSerializer(serializers.Serializer):
@@ -23,32 +31,39 @@ class NormalizeInstanceSerializer(serializers.Serializer):
     Source field names match the normalize InstanceModel exactly.
     """
 
-    instance_id          = serializers.UUIDField()
-    status               = serializers.ChoiceField(choices=INSTANCE_STATUS_CHOICES)
-    tenant_id            = serializers.CharField()
-    source_file_name     = serializers.CharField()
-    source_file_format   = serializers.ChoiceField(choices=FILE_FORMAT_CHOICES)
-    source_type          = serializers.ChoiceField(choices=FILE_SOURCE_CHOICES)
-    source_file          = serializers.CharField()
-    source_checksum      = serializers.CharField()
-    webhook_url          = serializers.URLField(allow_null=True, required=False)
-    suggested_config     = InstanceConfigSerializer(allow_null=True, required=False)
-    suggestion_display   = SuggestionDisplaySerializer(allow_null=True, required=False)
-    confirmed_config     = InstanceConfigSerializer(allow_null=True, required=False)
-    profiling_output     = ProfilingOutputSerializer(allow_null=True, required=False)
-    normalization_output = NormalizationOutputSerializer(allow_null=True, required=False)
-    timings              = StageTimingsSerializer(required=False)
+    instance_id             = serializers.UUIDField()
+    status                  = serializers.ChoiceField(choices=INSTANCE_STATUS_CHOICES)
+    tenant_id               = serializers.CharField()
+    source_file_name        = serializers.CharField()
+    source_file_format      = serializers.ChoiceField(choices=FILE_FORMAT_CHOICES)
+    source_type             = serializers.ChoiceField(choices=FILE_SOURCE_CHOICES)
+    source_file             = serializers.CharField()
+    source_checksum         = serializers.CharField()
+    suggestion_method       = serializers.ChoiceField(choices=SUGGESTION_METHOD_CHOICES)
+    extended_type_detection = serializers.BooleanField()
+    webhook_url             = serializers.URLField(allow_null=True, required=False)
+    suggested_config        = InstanceConfigSerializer(allow_null=True, required=False)
+    suggestion_display      = SuggestionDisplaySerializer(allow_null=True, required=False)
+    suggestion_confidence   = SuggestionConfidenceSerializer(allow_null=True, required=False)
+    confirmed_config        = InstanceConfigSerializer(allow_null=True, required=False)
+    profiling_output        = ProfilingOutputSerializer(allow_null=True, required=False)
+    normalization_output    = NormalizationOutputSerializer(allow_null=True, required=False)
+    timings                 = StageTimingsSerializer(required=False)
 
 
 class NormalizeSuggestRequestSerializer(serializers.Serializer):
-    source_file        = serializers.CharField()
-    source_type        = serializers.ChoiceField(choices=FILE_SOURCE_CHOICES)
-    source_file_name   = serializers.CharField()
-    source_file_format = serializers.ChoiceField(choices=FILE_FORMAT_CHOICES)
-    source_checksum    = serializers.RegexField(regex=r"^[0-9a-f]{64}$")
+    source_file             = serializers.CharField()
+    source_type             = serializers.ChoiceField(choices=FILE_SOURCE_CHOICES)
+    source_file_name        = serializers.CharField()
+    source_file_format      = serializers.ChoiceField(choices=FILE_FORMAT_CHOICES)
+    source_checksum         = serializers.RegexField(regex=r"^[0-9a-f]{64}$")
+    suggestion_method       = serializers.ChoiceField(choices=SUGGESTION_METHOD_CHOICES)
+    extended_type_detection = serializers.BooleanField()
+    auto_confirm            = serializers.BooleanField(default=False)
+    auto_normalize          = serializers.BooleanField(default=False)
 
 
 class NormalizeConfirmRequestSerializer(serializers.Serializer):
-    config                 = InstanceConfigSerializer()
-    proceed_with_pipeline  = serializers.BooleanField(default=False)
-    webhook_url            = serializers.URLField(allow_null=True, required=False)
+    config          = InstanceConfigSerializer()
+    auto_normalize  = serializers.BooleanField(default=False)
+    webhook_url     = serializers.URLField(allow_null=True, required=False)

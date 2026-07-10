@@ -2,7 +2,9 @@ from django.conf import settings
 from rest_framework import serializers
 from apps.normalization.models import Dataset
 from normalize.serializers import NormalizeInstanceSerializer
-from normalize.serializers.base import INSTANCE_STATUS_CHOICES, FILE_FORMAT_CHOICES, FILE_SOURCE_CHOICES
+from normalize.serializers.base import (
+    INSTANCE_STATUS_CHOICES, FILE_FORMAT_CHOICES, FILE_SOURCE_CHOICES, SUGGESTION_METHOD_CHOICES,
+)
 
 
 class DatasetSerializer(NormalizeInstanceSerializer, serializers.ModelSerializer):
@@ -28,6 +30,12 @@ class DatasetSerializer(NormalizeInstanceSerializer, serializers.ModelSerializer
     )
     source_file = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     source_checksum = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    suggestion_method = serializers.ChoiceField(
+        choices=SUGGESTION_METHOD_CHOICES,
+        required=False,
+        allow_null=True,
+    )
+    extended_type_detection = serializers.BooleanField(required=False, allow_null=True)
 
     class Meta:
         model = Dataset
